@@ -1,0 +1,10 @@
+{
+  "cluster_id": "nonexistent-cluster",
+  "snapshots": [
+    {
+      "cluster_id": "nonexistent-cluster",
+      "collected_at": "2026-08-28T09:25:12.047203+00:00",
+      "nodes": []
+    }
+  ]
+}

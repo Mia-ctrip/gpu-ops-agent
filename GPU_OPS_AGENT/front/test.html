@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>API 诊断测试</title>
+  <style>
+    body {
+      font-family: monospace;
+      background: #0B121C;
+      color: #E8EEF5;
+      padding: 20px;
+      line-height: 1.5;
+    }
+    .test-result {
+      background: #1a2332;
+      border: 1px solid #2a3a4a;
+      border-radius: 4px;
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+    .success {
+      border-left: 4px solid #4CAF50;
+    }
+    .error {
+      border-left: 4px solid #FF6B6B;
+    }
+    h1 { color: #5DADE2; }
+    pre { overflow-x: auto; }
+  </style>
+</head>
+<body>
+  <h1>API 诊断测试</h1>
+  <div id="results"></div>
+
+  <script>
+    // 从前端域名转换为后端域名（port8035 → port8030）
+    const frontendHost = window.location.hostname;
+    const backendHost = frontendHost.replace('port8035', 'port8030');
+    const API_BASE = `http://${backendHost}/api`;
+    const results = [];
+
+    async function test(name, url) {
+      try {
+        console.log(`测试: ${name} - ${url}`);
+        const response = await fetch(url);
+        const data = await response.json();
+        results.push({
+          name,
+          status: '✅',
+          data: JSON.stringify(data, null, 2).substring(0, 200) + '...'
+        });
+        console.log(`✅ ${name}:`, data);
+      } catch (err) {
+        results.push({
+          name,
+          status: '❌',
+          error: err.message
+        });
+        console.error(`❌ ${name}:`, err);
+      }
+    }
+
+    async function runTests() {
+      document.getElementById('results').innerHTML = '<div class="test-result">测试运行中... API: ' + API_BASE + '</div>';
+
+      await test('获取集群列表', `${API_BASE}/clusters`);
+      await test('获取 AI-SHAXY-TCS-PRO1 Facts', `${API_BASE}/clusters/AI-SHAXY-TCS-PRO1/facts`);
+      await test('获取 AI-SHAXY-TCS-PRO1 Trend', `${API_BASE}/clusters/AI-SHAXY-TCS-PRO1/trend`);
+
+      const html = results.map(r => `
+        <div class="test-result ${r.status.includes('✅') ? 'success' : 'error'}">
+          <strong>${r.status} ${r.name}</strong>
+          ${r.data ? `<pre>${r.data}</pre>` : ''}
+          ${r.error ? `<pre style="color: #FF6B6B;">错误: ${r.error}</pre>` : ''}
+        </div>
+      `).join('');
+
+      document.getElementById('results').innerHTML = html;
+    }
+
+    // 页面加载完成后运行测试
+    window.addEventListener('load', runTests);
+  </script>
+</body>
+</html>
