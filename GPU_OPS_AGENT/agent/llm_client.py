@@ -81,7 +81,7 @@ def call_link()->list:
             "model_supplier" :"DEEP_SEEK"
         },
         {
-            "model_name":"minimax-m3" ,
+            "model_name":"MiniMax-M2.7" ,
             "model_supplier" :"MINI_MAX"
         }
     ]

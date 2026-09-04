@@ -17,7 +17,7 @@ DEEP_SEEK_BASE_URL="https://api.deepseek.com"
 
 #minimax
 MINI_MAX_MODEL_NAME="minimax m3"
-MINI_MAX_BASE_URL=""
+MINI_MAX_BASE_URL="https://api.minimax.cn/v1"
 
 
 def get(model_name, model_supplier):
