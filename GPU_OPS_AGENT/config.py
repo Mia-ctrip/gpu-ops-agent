@@ -67,9 +67,9 @@ MAX_AGENT_ITERATIONS: int = 10
 # Maps cluster_id → gpu_type → set of anomalous Allocatable GPU counts
 # Only Allocatable GPU is checked; Available is never used for detection
 GPU_ANOMALY_RULES: dict[str, dict[str, set]] = {
-    "SHARB-A": {"h20": {5, 7}},              # h20 with 5,7 is anomalous (3 is OK)
-    "SHAXY-B": {"h20": {5, 7}},              # h20 with 5,7 is anomalous (3 is OK)
-    "SHARE-SHA-ALI-PRO1": {"h20": {3, 5, 7}},   # h20 with 3,5,7 all anomalous
-    "SHARE-SGP-ALI-PRO1": {"h20": {3, 5, 7}},   # h20 with 3,5,7 all anomalous
-    "AI-SHAXY-TCS-PRO1": {"h20": {3, 5, 7}},    # h20 with 3,5,7 all anomalous
+    "SHARB-A": {"h20": {5, 7}, "h20-141": {5, 7}},              # h20 with 5,7 is anomalous (3 is OK)
+    "SHAXY-B": {"h20": {5, 7}, "h20-141": {5, 7}},              # h20 with 5,7 is anomalous (3 is OK)
+    "SHARE-SHA-ALI-PRO1": {"h20": {3, 5, 7}, "h20-141": {3, 5, 7}},   # h20 with 3,5,7 all anomalous
+    "SHARE-SGP-ALI-PRO1": {"h20": {3, 5, 7}, "h20-141": {3, 5, 7}},   # h20 with 3,5,7 all anomalous
+    "AI-SHAXY-TCS-PRO1": {"h20": {3, 5, 7}, "h20-141": {3, 5, 7}},    # h20 with 3,5,7 all anomalous
 }

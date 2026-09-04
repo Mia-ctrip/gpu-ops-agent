@@ -159,6 +159,8 @@ def _detect_rule_based_anomalies(snapshot: ClusterSnapshot) -> list[Alert]:
 
     Use hard-coded rules for known cluster/gpu_type combinations.
     If a node's Allocatable GPU is in the anomalous set, flag it.
+
+    Universal rule: Any non-CPU GPU type with Allocatable GPU = 0 is always anomalous.
     """
     alerts = []
 
@@ -169,7 +171,26 @@ def _detect_rule_based_anomalies(snapshot: ClusterSnapshot) -> list[Alert]:
         alloc_gpu = node.allocatable.gpu
         gpu_type = node.gpu_type
 
-        # Check if this gpu_type has rules for this cluster
+        # Universal rule: Allocatable GPU = 0 for any non-CPU type is always anomalous
+        if alloc_gpu == 0 and gpu_type.lower() not in ['cpu', 'coremodel']:
+            alerts.append(Alert(
+                alert_id=str(uuid.uuid4()),
+                cluster_id=snapshot.cluster_id,
+                type=AlertType.GPU_REPORTING_ANOMALY,
+                severity=AlertSeverity.CRITICAL,
+                node_name=node.name,
+                gpu_type=gpu_type,
+                message=f"Node {node.name} (type {gpu_type}) Allocatable GPU=0 (GPU type should have GPUs)",
+                detected_at=datetime.now(timezone.utc),
+                raw_values={
+                    "allocatable_gpu": alloc_gpu,
+                    "gpu_type": gpu_type,
+                    "reason": "zero_allocatable_gpu",
+                },
+            ))
+            continue  # Skip cluster-specific rules for this node
+
+        # Check if this gpu_type has cluster-specific rules
         if gpu_type in cluster_rules:
             anomalous_counts = cluster_rules[gpu_type]
 
@@ -249,7 +270,7 @@ def _detect_statistical_anomalies(snapshot: ClusterSnapshot) -> list[Alert]:
                         alert_id=str(uuid.uuid4()),
                         cluster_id=snapshot.cluster_id,
                         type=AlertType.GPU_REPORTING_ANOMALY,
-                        severity=AlertSeverity.WARNING,
+                        severity=AlertSeverity.CRITICAL,
                         node_name=node.name,
                         gpu_type=node.gpu_type,
                         message=f"Node {node.name} (type {gpu_type}) Allocatable GPU={alloc_gpu} not found in cluster distribution {sorted(valid_counts_for_type)}",

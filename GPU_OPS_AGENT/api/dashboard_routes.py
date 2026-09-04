@@ -290,10 +290,14 @@ def get_cluster_nodes(
 
 def _node_detail(n) -> dict:
     """Return comprehensive node details for display."""
+    # Extract accelerator label value if it exists
+    accelerator_label = n.labels.get("cloud.ctrip.com/accelerator", "")
+
     return {
         "name": n.name,
         "ip": n.ip,
         "accelerator_type": n.gpu_type,
+        "accelerator_label": accelerator_label,
         "gpu": {
             "used": n.allocatable.gpu - n.available.gpu,
             "total": n.allocatable.gpu,

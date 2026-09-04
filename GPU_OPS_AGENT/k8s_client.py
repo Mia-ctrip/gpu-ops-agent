@@ -45,6 +45,7 @@ def parse_accelerator_type(accel_type: str) -> tuple[str, int, float]:
     Examples:
         "nvidia-h20"              → ("h20", 1, 96.0)   # default 96G for h20
         "nvidia-h20-141"          → ("h20-141", 1, 141.0)  # H20 with 141GB variant
+        "nvidia-h20-8-1128"       → ("h20-141", 8, 141.0)  # 8 H20s with 1128MB total = 141GB each
         "nvidia-tesla-l20-4-192"  → ("l20", 4, 48.0)   # 192/4=48G each
         "nvidia-tesla-a100-1-80"  → ("a100", 1, 80.0)
     """
@@ -75,6 +76,10 @@ def parse_accelerator_type(accel_type: str) -> tuple[str, int, float]:
             mem_per_gpu = total_mem / gpu_count
         except (ValueError, ZeroDivisionError):
             pass
+
+    # After calculating mem_per_gpu, check if this should be a memory variant for H20
+    if raw_type == "h20" and mem_per_gpu and mem_per_gpu >= 100:
+        gpu_type = f"h20-{int(mem_per_gpu)}"
 
     return gpu_type, gpu_count, mem_per_gpu
 

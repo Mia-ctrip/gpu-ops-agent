@@ -211,13 +211,20 @@
     }
 
     .gpu-card {
-      background: #1a2332;
+      background: linear-gradient(135deg, #1a2332 0%, #131c25 100%);
       border: 1px solid #2a3a4a;
       border-radius: 8px;
       padding: 16px;
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 16px;
+      transition: all 0.2s;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    .gpu-card:hover {
+      border-color: #3a5a6a;
+      box-shadow: 0 4px 16px rgba(93, 173, 226, 0.08);
     }
 
     .gpu-stats {
@@ -229,19 +236,31 @@
     .gpu-stat {
       flex: 1;
       text-align: center;
+      background: #0B121C;
+      border: 1px solid #2a3a4a;
+      border-radius: 6px;
+      padding: 12px;
+      transition: all 0.2s;
+    }
+
+    .gpu-stat:hover {
+      border-color: #5DADE2;
+      box-shadow: 0 0 12px rgba(93, 173, 226, 0.1);
     }
 
     .gpu-stat-label {
       font-size: 11px;
       color: #6B7E92;
       text-transform: uppercase;
-      margin-bottom: 4px;
+      margin-bottom: 6px;
+      letter-spacing: 0.5px;
     }
 
     .gpu-stat-value {
       font-size: 24px;
       font-weight: 600;
       color: #5DADE2;
+      line-height: 1.2;
     }
 
     /* ── 统计块 ── */
@@ -718,7 +737,7 @@
         const usedPercent = g.allocatable_gpu > 0 ? (g.used_gpu / g.allocatable_gpu * 100).toFixed(1) : 0;
         return `
           <div class="gpu-card">
-            <div style="font-size: 12px; color: #8CA3BA;">${g.gpu_type.toUpperCase()}</div>
+            <div style="font-size: 13px; font-weight: 600; color: #5DADE2; padding: 8px 0; letter-spacing: 0.5px;">${g.gpu_type.toUpperCase()}</div>
             <div class="gpu-stats">
               <div class="gpu-stat">
                 <div class="gpu-stat-label">Total</div>
@@ -733,12 +752,12 @@
                 <div class="gpu-stat-value" style="color: #4CAF50;">${g.available_gpu}</div>
               </div>
             </div>
-            <div style="margin-top: 8px;">
-              <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px;">
+            <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #2a3a4a;">
+              <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 8px; color: #8CA3BA;">
                 <span>${usedPercent}% Used</span>
-                <span style="color: #8CA3BA;">${g.node_count} nodes</span>
+                <span>${g.node_count} nodes</span>
               </div>
-              <div style="height: 8px; background: #0B121C; border-radius: 4px; overflow: hidden;">
+              <div style="height: 6px; background: #0B121C; border-radius: 3px; overflow: hidden; border: 1px solid #2a3a4a;">
                 <div style="height: 100%; width: ${util}%; background: linear-gradient(90deg, #FFC107, #FF9800); transition: width 0.3s;"></div>
               </div>
             </div>
@@ -917,6 +936,7 @@
             <td class="node-name-cell">${n.name}</td>
             <td class="node-ip-cell">${n.ip}</td>
             <td class="node-type-cell">${n.accelerator_type.toUpperCase()}</td>
+            <td style="font-size: 11px; color: #8CA3BA;">${n.accelerator_label || '-'}</td>
             <td>
               <span class="node-badge ready">${n.status}</span>
             </td>
@@ -966,6 +986,7 @@
               <th>Host Name</th>
               <th>IP Address</th>
               <th>GPU Type</th>
+              <th>Accelerator Label</th>
               <th>Status</th>
               <th>Scenario</th>
               <th>GPU<br/>(Used/Total)</th>
@@ -1008,6 +1029,7 @@
             <td class="node-name-cell">${n.name}</td>
             <td class="node-ip-cell">${n.ip}</td>
             <td class="node-type-cell">${n.accelerator_type.toUpperCase()}</td>
+            <td style="font-size: 11px; color: #8CA3BA;">${n.accelerator_label || '-'}</td>
             <td>
               <span class="node-badge ready">${n.status}</span>
             </td>
