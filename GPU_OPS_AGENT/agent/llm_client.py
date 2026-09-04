@@ -40,11 +40,14 @@ def llm_call(llm_input, tools, client, model_name)->object:
     
             messages = [
                 {
+                    "role": "system",
+                    "content": system_prompt
+                },
+                {
                     "role": "user",
-                    "content": system_prompt + "   "  + user_message
+                    "content": user_message
                 }
             ],
-            extra_body={"thinking": {"type": "enabled"}},
             tools = tools,
             tool_choice="auto"
         )
