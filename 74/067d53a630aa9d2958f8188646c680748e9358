@@ -1,0 +1,16 @@
+GPU_OPS_AGENT/agent/.env
+  h_e5cd53142b29a8 2
+GPU_OPS_AGENT/agent/llm_client.py
+  h_e5cd53142b29a8 2,46,52,95,102
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.45-trip",
+  "base_commit_sha": "74067d53a630aa9d2958f8188646c680748e9358",
+  "prompts": {},
+  "humans": {
+    "h_e5cd53142b29a8": {
+      "author": "yumeifeng <yumeifeng@trip.com>"
+    }
+  }
+}
