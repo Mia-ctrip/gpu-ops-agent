@@ -61,7 +61,23 @@
       "Bash(kill -9 420530 420531)",
       "Bash(kill -9 911593 911658)",
       "Bash(curl -s \"http://127.0.0.1:8030/api/clusters/SHARE-SHA-ALI-PRO1/nodes?gpu_type=h20&limit=5\")",
-      "Bash(curl -s \"http://port8030.ocp312proabscxpco-tr020002-0-svc.gps.cloud.ctripcorp.com/api/alerts?cluster_id=SHARE-SHA-ALI-PRO1\")"
+      "Bash(curl -s \"http://port8030.ocp312proabscxpco-tr020002-0-svc.gps.cloud.ctripcorp.com/api/alerts?cluster_id=SHARE-SHA-ALI-PRO1\")",
+      "Bash(curl -s http://localhost:8030/api/clusters)",
+      "Bash(pkill -f \"python main.py\")",
+      "Bash(curl -s \"http://localhost:8030/api/clusters/AI-SHAXY-TCS-PRO1/nodes?gpu_type=nvidia-h20&limit=1\")",
+      "Bash(curl -s \"http://localhost:8030/api/clusters/AI-SHAXY-TCS-PRO1/nodes?limit=1\")",
+      "Bash(curl -v \"http://localhost:8030/api/clusters/AI-SHAXY-TCS-PRO1/nodes?limit=1&offset=0\")",
+      "Bash(xargs rm -rf)",
+      "Bash(curl -s \"http://localhost:8030/api/clusters/AI-SHAXY-TCS-PRO1/nodes?limit=2\")",
+      "Bash(curl -s \"http://localhost:8030/debug/check-gpu-dist\")",
+      "Bash(pkill -9 python)",
+      "Read(//opt/app/conda/envs/py3.10/lib/python3.10/site-packages/**)",
+      "Bash(pkill -9 -f python)",
+      "Bash(pkill -f \"python main\")",
+      "Bash(curl -s \"http://127.0.0.1:8030/api/clusters\")",
+      "Bash(netstat -tlnp)",
+      "Bash(netstat -tln)",
+      "Bash(curl -s http://10.43.32.44:8030/api/alerts?cluster_id=AI-SHAXY-TCS-PRO1)"
     ]
   }
 }

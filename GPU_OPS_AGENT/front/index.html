@@ -518,6 +518,83 @@
 
     tr:hover td { background: #131C25; }
 
+    /* ── 展开行样式 ── */
+    .expand-btn {
+      background: none;
+      border: none;
+      color: #5DADE2;
+      cursor: pointer;
+      font-size: 14px;
+      padding: 0;
+      width: 24px;
+      transition: transform 0.2s;
+    }
+
+    .expand-btn.expanded {
+      transform: rotate(90deg);
+    }
+
+    .node-expansion-row {
+      display: none;
+    }
+
+    .node-expansion-row.expanded {
+      display: table-row;
+    }
+
+    .expansion-cell {
+      padding: 16px !important;
+      background: #0B121C;
+    }
+
+    .pods-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 12px;
+    }
+
+    .pod-item {
+      background: #131C25;
+      border: 1px solid #2a3a4a;
+      border-radius: 6px;
+      padding: 10px 12px;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 36px;
+    }
+
+    .pod-name {
+      font-weight: 600;
+      color: #E8EEF5;
+      font-family: monospace;
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-size: 11px;
+    }
+
+    .pod-gpu {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: #5DADE2;
+      flex-shrink: 0;
+    }
+
+    .pod-gpu-badge {
+      display: inline-block;
+      background: #1a3a52;
+      border: 1px solid #2a5a6a;
+      border-radius: 3px;
+      padding: 3px 8px;
+      font-size: 11px;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
     /* ── 状态消息 ── */
     .loading {
       text-align: center;
@@ -915,7 +992,7 @@
         return;
       }
 
-      const nodesHtml = nodes.map(n => {
+      const nodesHtml = nodes.map((n, idx) => {
         const gpuUtil = n.gpu.total > 0 ? (n.gpu.used / n.gpu.total * 100) : 0;
         const cpuUtil = n.cpu.total > 0 ? (n.cpu.used / n.cpu.total * 100) : 0;
         const memUtil = n.memory_mb.total > 0 ? (n.memory_mb.used / n.memory_mb.total * 100) : 0;
@@ -931,14 +1008,27 @@
         const memUsedGB = (n.memory_mb.used / 1024).toFixed(1);
         const memTotalGB = (n.memory_mb.total / 1024).toFixed(1);
 
+        const rowId = `node-row-${currentNodeOffset}-${idx}`;
+        const expandId = `node-expand-${currentNodeOffset}-${idx}`;
+
+        // Schedule status badge color
+        const scheduleStatusColor = n.schedule_status === 'Schedulable' ? '#4CAF50' : '#FFC107';
+        const scheduleStatusBg = n.schedule_status === 'Schedulable' ? 'rgba(76, 175, 80, 0.15)' : 'rgba(255, 193, 7, 0.15)';
+
         return `
-          <tr>
+          <tr id="${rowId}" style="cursor: pointer;" onclick="toggleNodeExpand('${expandId}', '${rowId}')">
+            <td style="width: 30px; padding: 12px; text-align: center;">
+              <button class="expand-btn" id="expand-btn-${expandId}" onclick="event.stopPropagation()">▶</button>
+            </td>
             <td class="node-name-cell">${n.name}</td>
             <td class="node-ip-cell">${n.ip}</td>
             <td class="node-type-cell">${n.accelerator_type.toUpperCase()}</td>
             <td style="font-size: 11px; color: #8CA3BA;">${n.accelerator_label || '-'}</td>
             <td>
               <span class="node-badge ready">${n.status}</span>
+            </td>
+            <td>
+              <span class="node-badge" style="background: ${scheduleStatusBg}; color: ${scheduleStatusColor}; border: 1px solid ${scheduleStatusColor};">${n.schedule_status}</span>
             </td>
             <td>
               <span class="node-badge scenario">${n.scenario}</span>
@@ -968,6 +1058,16 @@
               </div>
             </td>
           </tr>
+          <tr id="${expandId}" class="node-expansion-row">
+            <td colspan="11" class="expansion-cell">
+              <div style="margin-bottom: 8px; color: #6B7E92; font-size: 12px; font-weight: 600; text-transform: uppercase;">
+                Pod List (${n.gpu_distribution ? n.gpu_distribution.length : 0} pods)
+              </div>
+              <div class="pods-grid">
+                ${renderPodList(n.gpu_distribution)}
+              </div>
+            </td>
+          </tr>
         `;
       }).join('');
 
@@ -983,11 +1083,13 @@
         <table class="nodes-table">
           <thead>
             <tr>
+              <th style="width: 30px;"></th>
               <th>Host Name</th>
               <th>IP Address</th>
               <th>GPU Type</th>
               <th>Accelerator Label</th>
               <th>Status</th>
+              <th>Schedule</th>
               <th>Scenario</th>
               <th>GPU<br/>(Used/Total)</th>
               <th>CPU<br/>(Cores)</th>
@@ -1004,13 +1106,45 @@
       document.getElementById('nodesListContainer').innerHTML = tableHtml;
     }
 
+    function renderPodList(pods) {
+      if (!pods || pods.length === 0) {
+        return `<div style="grid-column: 1 / -1; color: #8CA3BA; font-size: 12px; padding: 12px;">无 GPU Pod</div>`;
+      }
+
+      return pods.map(pod => `
+        <div class="pod-item">
+          <div class="pod-name" title="${pod.pod_name}">${pod.pod_name}</div>
+          <div class="pod-gpu">
+            <span class="pod-gpu-badge">${pod.gpu_count} GPU</span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function toggleNodeExpand(expandId, rowId) {
+      const expandRow = document.getElementById(expandId);
+      const expandBtn = document.getElementById(`expand-btn-${expandId}`);
+
+      if (!expandRow) return;
+
+      const isExpanded = expandRow.classList.contains('expanded');
+
+      if (isExpanded) {
+        expandRow.classList.remove('expanded');
+        expandBtn.classList.remove('expanded');
+      } else {
+        expandRow.classList.add('expanded');
+        expandBtn.classList.add('expanded');
+      }
+    }
+
     function appendNodeList(nodes, hasNext = false) {
       if (!nodes || nodes.length === 0) return;
 
       const tbody = document.querySelector('.nodes-table tbody');
       if (!tbody) return;
 
-      const nodesHtml = nodes.map(n => {
+      const nodesHtml = nodes.map((n, idx) => {
         const gpuUtil = n.gpu.total > 0 ? (n.gpu.used / n.gpu.total * 100) : 0;
         const cpuUtil = n.cpu.total > 0 ? (n.cpu.used / n.cpu.total * 100) : 0;
         const memUtil = n.memory_mb.total > 0 ? (n.memory_mb.used / n.memory_mb.total * 100) : 0;
@@ -1024,14 +1158,27 @@
         const memUsedGB = (n.memory_mb.used / 1024).toFixed(1);
         const memTotalGB = (n.memory_mb.total / 1024).toFixed(1);
 
+        const rowId = `node-row-${currentNodeOffset}-${idx}`;
+        const expandId = `node-expand-${currentNodeOffset}-${idx}`;
+
+        // Schedule status badge color
+        const scheduleStatusColor = n.schedule_status === 'Schedulable' ? '#4CAF50' : '#FFC107';
+        const scheduleStatusBg = n.schedule_status === 'Schedulable' ? 'rgba(76, 175, 80, 0.15)' : 'rgba(255, 193, 7, 0.15)';
+
         return `
-          <tr>
+          <tr id="${rowId}" style="cursor: pointer;" onclick="toggleNodeExpand('${expandId}', '${rowId}')">
+            <td style="width: 30px; padding: 12px; text-align: center;">
+              <button class="expand-btn" id="expand-btn-${expandId}" onclick="event.stopPropagation()">▶</button>
+            </td>
             <td class="node-name-cell">${n.name}</td>
             <td class="node-ip-cell">${n.ip}</td>
             <td class="node-type-cell">${n.accelerator_type.toUpperCase()}</td>
             <td style="font-size: 11px; color: #8CA3BA;">${n.accelerator_label || '-'}</td>
             <td>
               <span class="node-badge ready">${n.status}</span>
+            </td>
+            <td>
+              <span class="node-badge" style="background: ${scheduleStatusBg}; color: ${scheduleStatusColor}; border: 1px solid ${scheduleStatusColor};">${n.schedule_status}</span>
             </td>
             <td>
               <span class="node-badge scenario">${n.scenario}</span>
@@ -1058,6 +1205,16 @@
                   <div class="resource-bar-fill ${getUtilClass(memUtil)}" style="width: ${Math.min(memUtil, 100)}%"></div>
                 </div>
                 <span class="resource-label">${memUsedGB}/${memTotalGB}GB</span>
+              </div>
+            </td>
+          </tr>
+          <tr id="${expandId}" class="node-expansion-row">
+            <td colspan="11" class="expansion-cell">
+              <div style="margin-bottom: 8px; color: #6B7E92; font-size: 12px; font-weight: 600; text-transform: uppercase;">
+                Pod List (${n.gpu_distribution ? n.gpu_distribution.length : 0} pods)
+              </div>
+              <div class="pods-grid">
+                ${renderPodList(n.gpu_distribution)}
               </div>
             </td>
           </tr>

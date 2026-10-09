@@ -18,6 +18,12 @@ class NodeStatus(str, Enum):
     NOT_READY = "NotReady"
 
 
+class ScheduleStatus(str, Enum):
+    """Whether a node can accept new pods."""
+    SCHEDULABLE = "Schedulable"
+    UNSCHEDULABLE = "Unschedulable"
+
+
 class AlertType(str, Enum):
     NODE_HEALTH = "NODE_HEALTH"
     GPU_REPORTING_ANOMALY = "GPU_REPORTING_ANOMALY"
@@ -52,6 +58,7 @@ class Node:
     gpu_type: str
     scenario: ScenarioRole
     status: NodeStatus
+    schedule_status: ScheduleStatus = ScheduleStatus.SCHEDULABLE
     allocatable: ResourceSpec = field(default_factory=ResourceSpec)
     available: ResourceSpec = field(default_factory=ResourceSpec)
     labels: dict = field(default_factory=dict)

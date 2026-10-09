@@ -147,6 +147,17 @@ def build_app(demo_data_path: str | None = None) -> FastAPI:
     def health():
         return {"status": "ok", "clusters": CLUSTERS}
 
+    @app.get("/debug/check-gpu-dist")
+    def check_gpu_dist():
+        """Debug endpoint to check if gpu_distribution is in the code"""
+        from api.dashboard_routes import _node_detail
+        import inspect
+        source = inspect.getsource(_node_detail)
+        return {
+            "has_gpu_distribution": "gpu_distribution" in source,
+            "source_lines": source.split('\n')[1:10]
+        }
+
     return app
 
 

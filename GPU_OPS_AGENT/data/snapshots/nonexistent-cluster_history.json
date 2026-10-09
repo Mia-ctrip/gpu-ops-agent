@@ -3,7 +3,12 @@
   "snapshots": [
     {
       "cluster_id": "nonexistent-cluster",
-      "collected_at": "2026-08-28T09:25:12.047203+00:00",
+      "collected_at": "2026-10-09T07:12:59.796475+00:00",
+      "nodes": []
+    },
+    {
+      "cluster_id": "nonexistent-cluster",
+      "collected_at": "2026-10-09T07:14:09.795190+00:00",
       "nodes": []
     }
   ]

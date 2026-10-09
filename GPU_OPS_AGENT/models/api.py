@@ -156,6 +156,11 @@ class NodeRaw:
         dist = d.get("GPUDistribution", {})
         if not isinstance(dist, dict):
             dist = {}
+
+        taints_raw = d.get("Taint", [])
+        if not isinstance(taints_raw, list):
+            taints_raw = []
+
         return cls(
             name=str(d.get("Name", "")),
             ip=str(d.get("Ip", "")),
@@ -164,7 +169,7 @@ class NodeRaw:
             allocatable=ResourceValues.from_dict(d.get("Allocatable", {})),
             available=ResourceValues.from_dict(d.get("Available", {})),
             labels=[LabelRaw.from_dict(x) for x in d.get("Label", []) if isinstance(x, dict)],
-            taints=[TaintRaw.from_dict(x) for x in d.get("Taint", []) if isinstance(x, dict)],
+            taints=[TaintRaw.from_dict(x) for x in taints_raw if isinstance(x, dict)],
             status=str(d.get("Status", "Ready")),
             support_train_infer_swap=bool(d.get("SupportTrainInferSwap", False)),
             gpu_pod_count=int(d.get("GPUPodCount", 0)),

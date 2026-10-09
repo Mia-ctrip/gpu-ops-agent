@@ -218,7 +218,7 @@ class SnapshotService:
         """Convert persisted JSON dict back to ClusterSnapshot."""
         try:
             from datetime import datetime as dt
-            from models.domain import Node, NodeStatus, ResourceSpec, PodGpuAllocation
+            from models.domain import Node, NodeStatus, ScheduleStatus, ResourceSpec, PodGpuAllocation
 
             cluster_id = data.get("cluster_id")
             collected_at_str = data.get("collected_at")
@@ -235,6 +235,12 @@ class SnapshotService:
                 try:
                     scenario = ScenarioRole(node_data.get("scenario"))
                     status = NodeStatus(node_data.get("status"))
+                    # 处理schedule_status，如果不存在则默认为Schedulable
+                    try:
+                        schedule_status = ScheduleStatus(node_data.get("schedule_status", "Schedulable"))
+                    except ValueError:
+                        schedule_status = ScheduleStatus.SCHEDULABLE
+
                     allocatable_dict = node_data.get("allocatable", {})
                     available_dict = node_data.get("available", {})
                     pods_data = node_data.get("pods", [])
@@ -266,6 +272,7 @@ class SnapshotService:
                         gpu_type=node_data.get("gpu_type"),
                         scenario=scenario,
                         status=status,
+                        schedule_status=schedule_status,
                         allocatable=allocatable,
                         available=available,
                         labels=node_data.get("labels", {}),
@@ -291,6 +298,7 @@ def _node_to_dict(node) -> dict:
         "gpu_type": node.gpu_type,
         "scenario": node.scenario.value,
         "status": node.status.value,
+        "schedule_status": node.schedule_status.value,
         "allocatable": {"gpu": node.allocatable.gpu, "cpu": node.allocatable.cpu, "mem": node.allocatable.mem},
         "available": {"gpu": node.available.gpu, "cpu": node.available.cpu, "mem": node.available.mem},
         "labels": node.labels,

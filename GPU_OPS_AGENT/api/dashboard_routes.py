@@ -8,6 +8,7 @@ construction.
 
 from __future__ import annotations
 
+from typing import Any
 from fastapi import APIRouter, HTTPException
 
 from services.alert_service import AlertService
@@ -224,7 +225,7 @@ def get_cluster_nodes(
     scenario: str | None = None,
     offset: int = 0,
     limit: int = 50
-) -> dict:
+):
     """Return detailed node information with pagination, optionally filtered by GPU type and scenario.
 
     Args:
@@ -293,7 +294,13 @@ def _node_detail(n) -> dict:
     # Extract accelerator label value if it exists
     accelerator_label = n.labels.get("cloud.ctrip.com/accelerator", "")
 
-    return {
+    # Convert pod list to display format
+    gpu_distribution = [
+        {"pod_name": pod.pod_name, "gpu_count": pod.gpu_count}
+        for pod in n.pods
+    ]
+
+    result = {
         "name": n.name,
         "ip": n.ip,
         "accelerator_type": n.gpu_type,
@@ -312,7 +319,11 @@ def _node_detail(n) -> dict:
         },
         "status": n.status.value,
         "scenario": n.scenario.value,
+        "schedule_status": n.schedule_status.value,
+        "gpu_distribution": gpu_distribution,
     }
+
+    return result
 
 
 # ── Facts aggregation (pure, testable) ──────────────────────────────

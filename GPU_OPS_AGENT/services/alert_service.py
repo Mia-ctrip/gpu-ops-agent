@@ -4,7 +4,7 @@ Takes a ClusterSnapshot, returns a list of Alerts.
 No LLM involvement — pure Python comparisons.
 
 Three alert types:
-1. NODE_HEALTH: Detects NotReady nodes
+1. NODE_HEALTH: Detects NotReady nodes and Unschedulable nodes
 2. GPU_REPORTING_ANOMALY: Detects GPU reporting issues (two-stage: rule-based + statistical)
 3. CAPACITY_WATERMARK: Detects high GPU watermark per GPU type (>90% CRITICAL, >75% WARNING)
 """
@@ -18,7 +18,7 @@ from typing import Callable
 
 from config import WATERMARK_CRITICAL, WATERMARK_WARNING, GPU_ANOMALY_RULES
 from models.alert import Alert
-from models.domain import AlertSeverity, AlertType, NodeStatus
+from models.domain import AlertSeverity, AlertType, NodeStatus, ScheduleStatus
 from models.snapshot import ClusterSnapshot
 
 logger = logging.getLogger(__name__)
@@ -67,12 +67,15 @@ class AlertService:
 
 
 def _rule_node_health(snapshot: ClusterSnapshot) -> list[Alert]:
-    """Alert on NotReady nodes.
+    """Alert on NotReady nodes and Unschedulable nodes.
 
-    Rule: Node is NotReady → CRITICAL alert
+    Rules:
+    - Node is NotReady → CRITICAL alert
+    - Node is Unschedulable → WARNING alert (cordoned)
     """
     alerts = []
     for node in snapshot.nodes:
+        # Check for NotReady status (highest severity)
         if node.status == NodeStatus.NOT_READY:
             alerts.append(Alert(
                 alert_id=str(uuid.uuid4()),
@@ -81,10 +84,27 @@ def _rule_node_health(snapshot: ClusterSnapshot) -> list[Alert]:
                 severity=AlertSeverity.CRITICAL,
                 node_name=node.name,
                 gpu_type=node.gpu_type,
-                message=f"Node {node.name} is NotReady",
+                message=f"节点 {node.name} 状态异常（NotReady）",
                 detected_at=datetime.now(timezone.utc),
                 raw_values={
                     "status": node.status.value,
+                    "schedule_status": node.schedule_status.value,
+                },
+            ))
+        # Check for Unschedulable status (node is cordoned)
+        elif node.schedule_status == ScheduleStatus.UNSCHEDULABLE:
+            alerts.append(Alert(
+                alert_id=str(uuid.uuid4()),
+                cluster_id=snapshot.cluster_id,
+                type=AlertType.NODE_HEALTH,
+                severity=AlertSeverity.WARNING,
+                node_name=node.name,
+                gpu_type=node.gpu_type,
+                message=f"节点 {node.name} 已被隔离（Unschedulable - cordoned）",
+                detected_at=datetime.now(timezone.utc),
+                raw_values={
+                    "status": node.status.value,
+                    "schedule_status": node.schedule_status.value,
                 },
             ))
     return alerts
@@ -118,7 +138,7 @@ def _rule_gpu_reporting_anomaly(snapshot: ClusterSnapshot) -> list[Alert]:
                 severity=AlertSeverity.CRITICAL,
                 node_name=node.name,
                 gpu_type=node.gpu_type,
-                message=f"Node {node.name} Available GPU={avail_gpu} is negative (data corruption detected)",
+                message=f"节点 {node.name} 显卡可用数为负数（数据腐坏）",
                 detected_at=datetime.now(timezone.utc),
                 raw_values={
                     "allocatable_gpu": alloc_gpu,
@@ -136,7 +156,7 @@ def _rule_gpu_reporting_anomaly(snapshot: ClusterSnapshot) -> list[Alert]:
                 severity=AlertSeverity.CRITICAL,
                 node_name=node.name,
                 gpu_type=node.gpu_type,
-                message=f"Node {node.name} Available GPU={avail_gpu} exceeds Allocatable GPU={alloc_gpu} (data corruption)",
+                message=f"节点 {node.name} 可用 GPU 数超过可分配数（数据腐坏）",
                 detected_at=datetime.now(timezone.utc),
                 raw_values={
                     "allocatable_gpu": alloc_gpu,
@@ -180,7 +200,7 @@ def _detect_rule_based_anomalies(snapshot: ClusterSnapshot) -> list[Alert]:
                 severity=AlertSeverity.CRITICAL,
                 node_name=node.name,
                 gpu_type=gpu_type,
-                message=f"Node {node.name} (type {gpu_type}) Allocatable GPU=0 (GPU type should have GPUs)",
+                message=f"节点 {node.name}（类型 {gpu_type}）显卡数为 0（应该有显卡）",
                 detected_at=datetime.now(timezone.utc),
                 raw_values={
                     "allocatable_gpu": alloc_gpu,
@@ -203,7 +223,7 @@ def _detect_rule_based_anomalies(snapshot: ClusterSnapshot) -> list[Alert]:
                     severity=AlertSeverity.WARNING,
                     node_name=node.name,
                     gpu_type=gpu_type,
-                    message=f"Node {node.name} (type {gpu_type}) Allocatable GPU={alloc_gpu} violates cluster rule",
+                    message=f"节点 {node.name}（类型 {gpu_type}）显卡数 {alloc_gpu} 违反集群规则",
                     detected_at=datetime.now(timezone.utc),
                     raw_values={
                         "allocatable_gpu": alloc_gpu,
@@ -273,7 +293,7 @@ def _detect_statistical_anomalies(snapshot: ClusterSnapshot) -> list[Alert]:
                         severity=AlertSeverity.CRITICAL,
                         node_name=node.name,
                         gpu_type=node.gpu_type,
-                        message=f"Node {node.name} (type {gpu_type}) Allocatable GPU={alloc_gpu} not found in cluster distribution {sorted(valid_counts_for_type)}",
+                        message=f"节点 {node.name}（类型 {gpu_type}）显卡数 {alloc_gpu} 不在集群分布范围内",
                         detected_at=datetime.now(timezone.utc),
                         raw_values={
                             "allocatable_gpu": alloc_gpu,
@@ -328,7 +348,7 @@ def _rule_capacity_watermark(snapshot: ClusterSnapshot) -> list[Alert]:
                 severity=AlertSeverity.CRITICAL,
                 node_name=None,
                 gpu_type=gpu_type,
-                message=f"GPU type '{gpu_type}' utilization at {utilization:.1%} (oversubscribed - available GPU is negative)",
+                message=f"显卡类型 '{gpu_type}' 利用率 {utilization:.1%}（超额分配 - 可用 GPU 为负）",
                 detected_at=datetime.now(timezone.utc),
                 raw_values={
                     "gpu_type": gpu_type,
@@ -348,7 +368,7 @@ def _rule_capacity_watermark(snapshot: ClusterSnapshot) -> list[Alert]:
                 severity=AlertSeverity.WARNING,
                 node_name=None,
                 gpu_type=gpu_type,
-                message=f"GPU type '{gpu_type}' utilization at {utilization:.1%} (approaching capacity limit)",
+                message=f"显卡类型 '{gpu_type}' 利用率 {utilization:.1%}（接近容量上限）",
                 detected_at=datetime.now(timezone.utc),
                 raw_values={
                     "gpu_type": gpu_type,

@@ -166,16 +166,37 @@ class K8sClient:
 
     def raw_node_to_domain(self, raw: NodeRaw, cluster_id: str, scenario: ScenarioRole) -> Node:
         """Convert a raw ``NodeRaw`` into a domain Node."""
+        from models.domain import ScheduleStatus
+
         gpu_type, _, _ = parse_accelerator_type(raw.gpu_type or raw.accelerator_type)
 
         pods: list[PodGpuAllocation] = [
             PodGpuAllocation(pod_name=p.pod_name, node_name=raw.name, gpu_count=p.gpu_count)
             for p in raw.gpu_distribution
         ]
-        try:
-            status = NodeStatus(raw.status)
-        except ValueError:
-            status = NodeStatus.NOT_READY
+
+        # Parse Status field: can be "Ready|Schedulable" or just "Ready"/"NotReady"
+        status = NodeStatus.NOT_READY
+        schedule_status = ScheduleStatus.SCHEDULABLE
+
+        status_str = raw.status or ""
+        if "|" in status_str:
+            # New format: "Ready|Schedulable" or "Ready|Unschedulable"
+            parts = status_str.split("|")
+            try:
+                status = NodeStatus(parts[0].strip())
+            except ValueError:
+                status = NodeStatus.NOT_READY
+            try:
+                schedule_status = ScheduleStatus(parts[1].strip())
+            except ValueError:
+                schedule_status = ScheduleStatus.SCHEDULABLE
+        else:
+            # Old format: just "Ready" or "NotReady"
+            try:
+                status = NodeStatus(status_str)
+            except ValueError:
+                status = NodeStatus.NOT_READY
 
         return Node(
             name=raw.name,
@@ -184,6 +205,7 @@ class K8sClient:
             gpu_type=gpu_type,
             scenario=scenario,
             status=status,
+            schedule_status=schedule_status,
             allocatable=_resource_spec(raw.allocatable),
             available=_resource_spec(raw.available),
             labels={l.key: l.value for l in raw.labels},
