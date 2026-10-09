@@ -29,28 +29,20 @@ class LlmInput():
 
 
 # 大模型调用
-def llm_call(llm_input, tools, client, model_name)->object:
-    system_prompt = llm_input.system_prompt
-    user_message = llm_input.user_message
-    print(system_prompt)
-    print(user_message)
+def llm_call(messages, tools, client, model_name)->object:
     try:
-        response =  client.chat.completions.create(
-            model = model_name,
-    
-            messages = [
-                {
-                    "role": "system",
-                    "content": system_prompt
-                },
-                {
-                    "role": "user",
-                    "content": user_message
-                }
-            ],
-            tools = tools,
-            tool_choice="auto"
-        )
+        if tools is None:
+            response =  client.chat.completions.create(
+                        model = model_name,
+                        messages = messages
+                    )
+        else:    
+            response =  client.chat.completions.create(
+                model = model_name,
+                messages = messages,
+                tools = tools,
+                tool_choice="auto"
+            )
         return response
     except RateLimitError as e:
         print("429:", e)
@@ -92,8 +84,7 @@ def call_link()->list:
 
 
 #llm client调用入口
-def client_call(model_input)->list:
-    tools = None
+def client_call(messages,tools)->any:
     model_list = call_link()
     response = None
     #按照模型降级的调用链
@@ -104,13 +95,13 @@ def client_call(model_input)->list:
             api_key,base_url = llm_config.get(model_name,model_supplier)
             model_client = create_client(api_key,base_url)
             for i in range(llm_config.RETRY_TIMES):
-                response = llm_call(model_input,tools,model_client,model_name)
+                response = llm_call(messages,tools,model_client,model_name)
                 if response == "break":
                     break
                 elif response == "continue":
                     continue
                 else:
-                    return response.choices[0].message.content     
+                    return response.choices[0].message 
     except Exception as e:
         raise Exception("llm calling fail")   
 

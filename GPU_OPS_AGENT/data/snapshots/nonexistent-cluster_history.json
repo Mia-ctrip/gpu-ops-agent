@@ -10,6 +10,16 @@
       "cluster_id": "nonexistent-cluster",
       "collected_at": "2026-10-09T07:14:09.795190+00:00",
       "nodes": []
+    },
+    {
+      "cluster_id": "nonexistent-cluster",
+      "collected_at": "2026-10-09T12:04:02.367696+00:00",
+      "nodes": []
+    },
+    {
+      "cluster_id": "nonexistent-cluster",
+      "collected_at": "2026-10-09T12:10:15.843448+00:00",
+      "nodes": []
     }
   ]
 }
