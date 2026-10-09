@@ -1,4 +1,5 @@
 import llm_config
+import time
 from openai import (
     OpenAI,
     APIError,
@@ -22,10 +23,6 @@ def create_client(api_key: str, base_url: str | None = None) -> OpenAI:
     )
 
 
-class LlmInput():
-    def __init__(self,system_prompt,user_message)->None:
-        self.system_prompt = system_prompt
-        self.user_message = user_message
 
 
 # 大模型调用
@@ -46,13 +43,13 @@ def llm_call(messages, tools, client, model_name)->object:
         return response
     except RateLimitError as e:
         print("429:", e)
-        return "break"
+        return "continue"
     except AuthenticationError as e:
         print("401:", e)
         return "break"
     except BadRequestError as e:
         print("400:", e)
-        return "continue"
+        return "break"
     except NotFoundError as e:
         print("404:", e)
         return "break"
@@ -95,13 +92,14 @@ def client_call(messages,tools)->any:
             api_key,base_url = llm_config.get(model_name,model_supplier)
             model_client = create_client(api_key,base_url)
             for i in range(llm_config.RETRY_TIMES):
+                time.sleep(0.5)
                 response = llm_call(messages,tools,model_client,model_name)
                 if response == "break":
                     break
                 elif response == "continue":
                     continue
                 else:
-                    return response.choices[0].message 
+                    return response.choices[0].message
     except Exception as e:
         raise Exception("llm calling fail")   
 
